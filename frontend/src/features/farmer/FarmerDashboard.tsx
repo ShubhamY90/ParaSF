@@ -30,11 +30,16 @@ const activeCards = [
     to: "/farmer/bank",
     badge: "Active",
   },
+  {
+    icon: "🗺️",
+    title: "Satellite Map",
+    desc: "Satellite view centred on your registered farm",
+    to: "/farmer/map",
+    badge: "Active",
+  },
 ];
 
 const upcomingCards = [
-  { icon: "🗺️", title: "Satellite Map", desc: "Live satellite view centred on your farm", badge: "Stage 3" },
-  { icon: "🌧️", title: "Weather Alerts", desc: "Real-time rainfall and flood events", badge: "Stage 4" },
   { icon: "💰", title: "Claims", desc: "Claim status, evidence & payment history", badge: "Stage 8" },
 ];
 
@@ -54,7 +59,7 @@ export default function FarmerDashboard() {
         <h2 className="text-sm font-semibold uppercase tracking-wider text-brand-blue mb-4">
           Farm & Policy Management
         </h2>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-5">
           {activeCards.map((c) => (
             <Link
               key={c.title}
