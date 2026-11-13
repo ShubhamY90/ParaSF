@@ -16,12 +16,23 @@ const activeCards = [
     to: "/insurer/policies",
     badge: "Active",
   },
+  {
+    icon: "🗺️",
+    title: "Operations Map",
+    desc: "District-wide satellite map with farm boundaries and sensor overlays",
+    to: "/insurer/map",
+    badge: "Active",
+  },
+  {
+    icon: "📡",
+    title: "Sensor Health",
+    desc: "Detect faulty sensor readings, score sensor trust, and investigate flags",
+    to: "/insurer/map",
+    badge: "Stage 5",
+  },
 ];
 
 const upcomingCards = [
-  { icon: "🗺️", title: "Operations Map", desc: "District-wide satellite map with farm and sensor overlays", badge: "Stage 3" },
-  { icon: "🌪️", title: "Weather Events", desc: "Active weather events and storm tracking", badge: "Stage 4" },
-  { icon: "📡", title: "Sensor Health", desc: "Fault detection and sensor trust scores", badge: "Stage 5" },
   { icon: "⚠️", title: "Risk Assessment", desc: "Farm-level rainfall risk and uncertainty", badge: "Stage 6" },
   { icon: "🤖", title: "AI Agents", desc: "Investigation workflow and agent traces", badge: "Stage 7" },
   { icon: "✅", title: "Claims Queue", desc: "Review and approve claim recommendations", badge: "Stage 8" },

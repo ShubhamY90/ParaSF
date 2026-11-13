@@ -8,11 +8,13 @@ import FarmRegistrationPage from "../features/farmer/FarmRegistrationPage";
 import MyFarmsPage from "../features/farmer/MyFarmsPage";
 import MyPolicyPage from "../features/farmer/MyPolicyPage";
 import BankAccountPage from "../features/farmer/BankAccountPage";
+import MyFarmMapPage from "../features/farmer/MyFarmMapPage";
 import InsurerDashboard from "../features/insurer/InsurerDashboard";
 import FarmerRegistryPage from "../features/insurer/FarmerRegistryPage";
 import FarmerDetailPage from "../features/insurer/FarmerDetailPage";
 import PolicyListPage from "../features/insurer/PolicyListPage";
 import PolicyFormPage from "../features/insurer/PolicyFormPage";
+import OperationsMapPage from "../features/insurer/OperationsMapPage";
 import AuditorDashboard from "../features/auditor/AuditorDashboard";
 import AdminDashboard from "../features/admin/AdminDashboard";
 import ProtectedRoute from "../features/shared/ProtectedRoute";
@@ -75,6 +77,14 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/farmer/map"
+        element={
+          <ProtectedRoute allowedRoles={["farmer"]}>
+            <MyFarmMapPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Insurer Routes */}
       <Route
@@ -114,6 +124,14 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={["insurer", "admin"]}>
             <PolicyFormPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/insurer/map"
+        element={
+          <ProtectedRoute allowedRoles={["insurer", "admin", "auditor"]}>
+            <OperationsMapPage />
           </ProtectedRoute>
         }
       />
