@@ -3,7 +3,16 @@ import LandingPage from "../features/landing/LandingPage";
 import LoginPage from "../features/auth/LoginPage";
 import RegisterPage from "../features/auth/RegisterPage";
 import FarmerDashboard from "../features/farmer/FarmerDashboard";
+import FarmerProfilePage from "../features/farmer/FarmerProfilePage";
+import FarmRegistrationPage from "../features/farmer/FarmRegistrationPage";
+import MyFarmsPage from "../features/farmer/MyFarmsPage";
+import MyPolicyPage from "../features/farmer/MyPolicyPage";
+import BankAccountPage from "../features/farmer/BankAccountPage";
 import InsurerDashboard from "../features/insurer/InsurerDashboard";
+import FarmerRegistryPage from "../features/insurer/FarmerRegistryPage";
+import FarmerDetailPage from "../features/insurer/FarmerDetailPage";
+import PolicyListPage from "../features/insurer/PolicyListPage";
+import PolicyFormPage from "../features/insurer/PolicyFormPage";
 import AuditorDashboard from "../features/auditor/AuditorDashboard";
 import AdminDashboard from "../features/admin/AdminDashboard";
 import ProtectedRoute from "../features/shared/ProtectedRoute";
@@ -17,6 +26,7 @@ export default function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
+      {/* Farmer Routes */}
       <Route
         path="/farmer"
         element={
@@ -26,6 +36,48 @@ export default function AppRoutes() {
         }
       />
       <Route
+        path="/farmer/profile"
+        element={
+          <ProtectedRoute allowedRoles={["farmer"]}>
+            <FarmerProfilePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/farmer/farms"
+        element={
+          <ProtectedRoute allowedRoles={["farmer"]}>
+            <MyFarmsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/farmer/farms/new"
+        element={
+          <ProtectedRoute allowedRoles={["farmer"]}>
+            <FarmRegistrationPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/farmer/policy"
+        element={
+          <ProtectedRoute allowedRoles={["farmer"]}>
+            <MyPolicyPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/farmer/bank"
+        element={
+          <ProtectedRoute allowedRoles={["farmer"]}>
+            <BankAccountPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Insurer Routes */}
+      <Route
         path="/insurer"
         element={
           <ProtectedRoute allowedRoles={["insurer", "admin"]}>
@@ -33,6 +85,40 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/insurer/farmers"
+        element={
+          <ProtectedRoute allowedRoles={["insurer", "admin", "auditor"]}>
+            <FarmerRegistryPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/insurer/farmers/:profileId"
+        element={
+          <ProtectedRoute allowedRoles={["insurer", "admin", "auditor"]}>
+            <FarmerDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/insurer/policies"
+        element={
+          <ProtectedRoute allowedRoles={["insurer", "admin", "auditor"]}>
+            <PolicyListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/insurer/policies/new"
+        element={
+          <ProtectedRoute allowedRoles={["insurer", "admin"]}>
+            <PolicyFormPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Auditor & Admin Routes */}
       <Route
         path="/auditor"
         element={
