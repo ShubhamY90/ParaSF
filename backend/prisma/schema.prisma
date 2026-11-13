@@ -1,0 +1,17 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Stage 1 starting point; later stages add farms, policies, sensors, claims, audit, etc.
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         String   // FARMER | OPERATOR | AUDITOR | ADMIN
+  createdAt    DateTime @default(now())
+}
