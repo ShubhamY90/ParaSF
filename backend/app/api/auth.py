@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.db.engine import get_db
 from app.models.user import User
-from app.schemas.auth import UserCreate, UserOut, LoginRequest, TokenResponse
+from app.schemas.auth import UserCreate, UserSync, UserOut, LoginRequest, TokenResponse
 from app.core.security import hash_password, verify_password, create_access_token, get_current_user
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -18,6 +18,29 @@ def register(body: UserCreate, db: Session = Depends(get_db)):
         role=body.role,
     )
     db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+@router.post("/sync", response_model=UserOut)
+def sync_user(body: UserSync, db: Session = Depends(get_db)):
+    """Sync or provision a user from Firebase Auth into SQLite DB with their designated role."""
+    email_clean = body.email.strip().lower()
+    user = db.query(User).filter(User.email == email_clean).first()
+    if user:
+        if body.full_name and not user.full_name:
+            user.full_name = body.full_name
+        if body.role and user.role != body.role:
+            user.role = body.role
+    else:
+        user = User(
+            email=email_clean,
+            hashed_password=hash_password("firebase-auth-managed"),
+            full_name=body.full_name,
+            role=body.role,
+            is_active=True,
+        )
+        db.add(user)
     db.commit()
     db.refresh(user)
     return user

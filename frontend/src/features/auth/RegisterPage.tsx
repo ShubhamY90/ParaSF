@@ -3,8 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { UserRole } from "../../api/auth";
 
-const FARMER_ROLES: { value: UserRole; label: string }[] = [
-  { value: "farmer", label: "🌾 Farmer" },
+const AVAILABLE_ROLES: { value: UserRole; label: string; desc: string }[] = [
+  { value: "farmer", label: "🌾 Farmer", desc: "Insured farms, alerts & claim payouts" },
+  { value: "insurer", label: "🏦 Insurer", desc: "Policies, operations map & risk" },
+  { value: "auditor", label: "📋 Auditor", desc: "Sensor health & audit records" },
+  { value: "admin", label: "⚙️ Admin", desc: "Platform admin & configuration" },
 ];
 
 export default function RegisterPage() {
@@ -29,12 +32,14 @@ export default function RegisterPage() {
     }
   }
 
+  const selectedRoleObj = AVAILABLE_ROLES.find((r) => r.value === form.role);
+
   return (
-    <div className="flex items-center justify-center min-h-[80vh] px-4">
-      <div className="w-full max-w-md bg-navy-800 rounded-2xl p-8 border border-navy-700 space-y-6">
+    <div className="flex items-center justify-center min-h-[80vh] px-4 py-8">
+      <div className="w-full max-w-lg bg-navy-800 rounded-2xl p-8 border border-navy-700 space-y-6">
         <div className="text-center space-y-1">
           <h2 className="text-2xl font-bold text-white">Create your account</h2>
-          <p className="text-gray-400 text-sm">Join ParaTrust as a farmer</p>
+          <p className="text-gray-400 text-sm">Join ParaTrust platform</p>
         </div>
 
         {error && (
@@ -44,6 +49,28 @@ export default function RegisterPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Role selector */}
+          <div className="space-y-1.5">
+            <label className="block text-sm text-gray-300 font-medium">Select Role</label>
+            <div className="grid grid-cols-2 gap-2">
+              {AVAILABLE_ROLES.map((r) => (
+                <button
+                  type="button"
+                  key={r.value}
+                  onClick={() => setForm((f) => ({ ...f, role: r.value }))}
+                  className={`p-2.5 rounded-xl border text-left transition flex flex-col gap-0.5 ${
+                    form.role === r.value
+                      ? "border-brand-green bg-green-950/50 text-white ring-1 ring-brand-green"
+                      : "border-navy-600 bg-navy-700/60 text-gray-300 hover:border-navy-500"
+                  }`}
+                >
+                  <span className="text-sm font-semibold">{r.label}</span>
+                  <span className="text-[11px] text-gray-400 leading-tight">{r.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm text-gray-300 mb-1.5">Full Name</label>
             <input
@@ -82,7 +109,7 @@ export default function RegisterPage() {
             disabled={loading}
             className="w-full py-3 bg-brand-green text-navy font-bold rounded-lg hover:bg-green-400 disabled:opacity-60 transition"
           >
-            {loading ? "Creating account…" : "Create Account"}
+            {loading ? "Creating account…" : `Create ${selectedRoleObj?.label.split(" ")[1] || "Account"}`}
           </button>
         </form>
 

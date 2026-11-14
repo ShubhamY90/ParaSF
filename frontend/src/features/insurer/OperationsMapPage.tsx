@@ -21,19 +21,23 @@ import SensorInvestigationPanel from "../sensors/SensorInvestigationPanel";
 import { useSimulation } from "../../hooks/useSimulation";
 import { useAuth } from "../../hooks/useAuth";
 import { useSensorTrust } from "../../hooks/useSensorTrust";
+import { useRisk } from "../../hooks/useRisk";
 
 export default function OperationsMapPage() {
   const { token } = useAuth();
   const sim = useSimulation(token);
   const sensorTrust = useSensorTrust();
+  const risk = useRisk();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedSensorId, setSelectedSensorId] = useState<string | null>(null);
+  const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
 
-  // Clear sensor-trust state + selection whenever the active run changes so we
-  // never show stale trust data from a previous simulation.
+  // Clear sensor-trust & risk state whenever the active run changes
   useEffect(() => {
     sensorTrust.clear();
+    risk.clear();
     setSelectedSensorId(null);
+    setSelectedFarmId(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sim.run?.id]);
 
@@ -64,7 +68,7 @@ export default function OperationsMapPage() {
           <span className="text-gray-600">|</span>
           <h1 className="text-white font-semibold text-sm">Operations Map</h1>
           <span className="text-xs px-2 py-0.5 rounded-full bg-green-900/50 text-green-300 border border-green-700">
-            Stages 3–5 Active
+            Stages 3–6 Active
           </span>
           {sim.snapshot?.flood_active && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-red-900/60 text-red-300 border border-red-700 animate-pulse">
@@ -99,6 +103,8 @@ export default function OperationsMapPage() {
             weatherSnapshot={sim.snapshot}
             sensorTrust={sensorTrust.trustGeojson}
             onSensorClick={handleSensorClick}
+            riskGeojson={risk.riskGeojson}
+            onFarmRiskClick={(farmId) => setSelectedFarmId(farmId)}
             layerVisibility={{
               rainfall_overlay: !!sim.snapshot,
               flood_overlay: !!sim.snapshot,
@@ -114,6 +120,8 @@ export default function OperationsMapPage() {
             onToggleCollapse={() => setSidebarOpen(o => !o)}
             sensorTrust={sensorTrust}
             onSensorSelect={handleSensorSelect}
+            risk={risk}
+            selectedFarmId={selectedFarmId}
           />
         )}
       </div>

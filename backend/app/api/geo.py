@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.db.engine import get_db
 from app.models.user import UserRole, User
 from app.models.stage2 import FarmerProfile, Farm, InsurancePolicy, Crop
+from app.models.risk import FarmRiskEstimate
 from app.core.deps import require_role
 from app.core.security import get_current_user
 from app.services import geo
@@ -185,10 +186,20 @@ def get_farm_detail(
         for c in (farm.crops or [])
     ]
 
+    risk_est = (
+        db.query(FarmRiskEstimate)
+        .filter(FarmRiskEstimate.farm_id.in_([str(farm.id), f"SIM-FARM-{farm.id:03d}"]))
+        .order_by(FarmRiskEstimate.tick.desc())
+        .first()
+    )
+    estimated_rainfall_mm = risk_est.estimated_rainfall_mm if risk_est else None
+    risk_category = risk_est.risk_category if risk_est else None
+
     stage_notes: list[str] = []
     if not farm.latitude or not farm.longitude:
         stage_notes.append("No coordinates stored for this farm — not shown on the map.")
-    stage_notes.append("Risk assessment not yet available (Stage 6).")
+    if not risk_est:
+        stage_notes.append("Risk assessment not yet available (Stage 6).")
     stage_notes.append("Claim tracking not yet available (Stage 8).")
 
     return FarmMapDetail(
@@ -205,6 +216,8 @@ def get_farm_detail(
         policy=policy_brief,
         policy_status=policy_status,
         sum_insured=sum_insured,
+        estimated_rainfall_mm=estimated_rainfall_mm,
+        risk_category=risk_category,
         stage_notes=stage_notes,
         in_demo_district=geo.in_district(farm.latitude, farm.longitude),
     )

@@ -7,6 +7,11 @@ class UserCreate(BaseModel):
     full_name: str | None = None
     role: UserRole = UserRole.farmer
 
+class UserSync(BaseModel):
+    email: EmailStr
+    role: UserRole = UserRole.farmer
+    full_name: str | None = None
+
 class UserOut(BaseModel):
     id: int
     email: str

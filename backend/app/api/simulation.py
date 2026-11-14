@@ -178,8 +178,7 @@ async def stream_run(
     the SSE stream only reads and advances.
     """
     # Resolve auth: prefer Authorization header, fall back to ?token= query param.
-    from app.core.security import decode_token
-    from app.models.user import User
+    from app.core.security import get_user_from_token
 
     auth_header = request.headers.get("authorization", "")
     raw_token = token
@@ -189,12 +188,7 @@ async def stream_run(
         from fastapi.responses import Response
         return Response(status_code=401, content="Missing authentication token")
     try:
-        payload = decode_token(raw_token)
-        user_id = int(payload.get("sub", 0))
-        current_user = db.get(User, user_id)
-        if not current_user or not current_user.is_active:
-            from fastapi.responses import Response
-            return Response(status_code=401, content="Invalid user")
+        current_user = get_user_from_token(raw_token, db)
     except Exception:
         from fastapi.responses import Response
         return Response(status_code=401, content="Invalid token")

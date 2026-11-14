@@ -108,7 +108,24 @@ export const authApi = {
     try {
       const cred = await createUserWithEmailAndPassword(auth, payload.email, payload.password);
       const role = payload.role || DEMO_ROLES[payload.email.toLowerCase()] || "farmer";
-      return await syncUserProfile(cred.user, role, payload.full_name);
+      const profile = await syncUserProfile(cred.user, role, payload.full_name);
+
+      // Also sync user and role to backend SQLite database
+      try {
+        await fetch("/api/auth/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: payload.email,
+            role,
+            full_name: payload.full_name,
+          }),
+        });
+      } catch (syncErr) {
+        console.warn("Backend auth sync warning:", syncErr);
+      }
+
+      return profile;
     } catch (err: any) {
       if (err.code === "auth/email-already-in-use") {
         throw new Error("Email is already registered. Please sign in instead.");
@@ -159,6 +176,21 @@ export const authApi = {
     const role = demoRole || "farmer";
     const userProfile = await syncUserProfile(cred.user, role);
     const token = await cred.user.getIdToken();
+
+    // Also sync user and role to backend SQLite database
+    try {
+      await fetch("/api/auth/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: payload.email,
+          role: userProfile.role || role,
+          full_name: userProfile.full_name,
+        }),
+      });
+    } catch (syncErr) {
+      console.warn("Backend auth sync warning:", syncErr);
+    }
 
     return {
       access_token: token,

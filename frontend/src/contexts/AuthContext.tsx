@@ -37,6 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setToken(idToken);
 
           const demoRole = DEMO_ROLES[firebaseUser.email?.toLowerCase() || ""];
+          let resolvedRole: UserRole = demoRole || "farmer";
 
           // Try Firestore — but fall back gracefully if DB not provisioned yet
           try {
@@ -45,11 +46,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (snap.exists()) {
               const data = snap.data();
+              resolvedRole = (data.role as UserRole) || demoRole || "farmer";
               setUser({
                 id: firebaseUser.uid,
                 email: firebaseUser.email || data.email,
                 full_name: data.full_name || firebaseUser.displayName || null,
-                role: (data.role as UserRole) || demoRole || "farmer",
+                role: resolvedRole,
                 is_active: data.is_active !== undefined ? data.is_active : true,
                 created_at: data.created_at ? data.created_at.toString() : undefined,
               });
@@ -72,6 +74,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               role: demoRole || "farmer",
               is_active: true,
             });
+          }
+
+          // Keep backend SQLite DB in sync
+          if (firebaseUser.email) {
+            fetch("/api/auth/sync", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                email: firebaseUser.email,
+                role: resolvedRole,
+                full_name: firebaseUser.displayName || null,
+              }),
+            }).catch(() => {});
           }
         } catch (err) {
           console.error("Auth state error:", err);

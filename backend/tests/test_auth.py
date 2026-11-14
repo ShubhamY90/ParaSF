@@ -44,3 +44,31 @@ def test_me_authenticated():
     r = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert r.status_code == 200
     assert r.json()["role"] == "insurer"
+
+def test_sync_user_and_firebase_token():
+    import time
+    from jose import jwt
+    # Sync user as insurer
+    r_sync = client.post("/api/auth/sync", json={"email": "agent@firebase.com", "role": "insurer", "full_name": "Agent Smith"})
+    assert r_sync.status_code == 200
+    assert r_sync.json()["role"] == "insurer"
+
+    # Simulate a Firebase ID token signed with unverified external key
+    fb_claims = {
+        "iss": "https://securetoken.google.com/parasf-3b57b",
+        "aud": "parasf-3b57b",
+        "sub": "firebase_random_uid_987",
+        "email": "agent@firebase.com",
+        "exp": time.time() + 3600,
+    }
+    fb_token = jwt.encode(fb_claims, "external_google_private_key", algorithm="HS256")
+
+    # Call /api/auth/me using the Firebase token
+    r_me = client.get("/api/auth/me", headers={"Authorization": f"Bearer {fb_token}"})
+    assert r_me.status_code == 200
+    assert r_me.json()["email"] == "agent@firebase.com"
+    assert r_me.json()["role"] == "insurer"
+
+    # Call protected admin/farmers endpoint using the Firebase token
+    r_admin = client.get("/api/admin/farmers/", headers={"Authorization": f"Bearer {fb_token}"})
+    assert r_admin.status_code == 200

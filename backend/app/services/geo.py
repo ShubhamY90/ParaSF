@@ -277,3 +277,39 @@ def water_feature_collection() -> dict[str, Any]:
             },
         })
     return {"type": "FeatureCollection", "features": features}
+
+
+# ─── Simulated farm centroids (Stage 6) ──────────────────────────────────────
+
+@dataclass
+class SimFarm:
+    """Lightweight simulated farm record for spatial estimation.
+
+    The GP service needs farm centroids without hitting the database.
+    These are deterministically generated from the same seed used for sensors,
+    ensuring reproducibility.
+    """
+    id: str
+    latitude: float
+    longitude: float
+    boundary: list[list[float]]  # closed polygon ring, [lng, lat] pairs
+
+
+def generate_farms(seed: int | None = None, n_farms: int = 100) -> list[SimFarm]:
+    """Deterministically generate simulated farm centroids within the demo district."""
+    rng = random.Random(seed if seed is not None else settings.simulation_seed + 1)
+    min_lng, min_lat, max_lng, max_lat = DEMO_DISTRICT_BBOX
+
+    farms: list[SimFarm] = []
+    for i in range(n_farms):
+        lat = rng.uniform(min_lat + 0.005, max_lat - 0.005)
+        lng = rng.uniform(min_lng + 0.005, max_lng - 0.005)
+        area_ha = rng.uniform(0.5, 5.0)
+        boundary = farm_centroid_square(lat, lng, area_ha)
+        farms.append(SimFarm(
+            id=f"SIM-FARM-{i + 1:03d}",
+            latitude=round(lat, 5),
+            longitude=round(lng, 5),
+            boundary=boundary,
+        ))
+    return farms

@@ -63,6 +63,8 @@ export interface LayerVisibility {
   flood_overlay: boolean;
   /** Stage 5 — sensor trust overlay (coloured by trust score, flagged sensors highlighted). */
   sensor_trust: boolean;
+  /** Stage 6 — farm risk overlay (coloured by risk category). */
+  risk_overlay: boolean;
 }
 
 export const DEFAULT_LAYER_VISIBILITY: LayerVisibility = {
@@ -74,6 +76,7 @@ export const DEFAULT_LAYER_VISIBILITY: LayerVisibility = {
   rainfall_overlay: true,
   flood_overlay: true,
   sensor_trust: true,
+  risk_overlay: true,
 };
 
 interface MapViewProps {
@@ -88,6 +91,10 @@ interface MapViewProps {
   sensorTrust?: GeoJSON.FeatureCollection | null;
   /** Stage 5 — called when a sensor trust marker is clicked. */
   onSensorClick?: (sensorId: string) => void;
+  /** Stage 6 — farm risk GeoJSON. When present, farms are coloured by risk category. */
+  riskGeojson?: GeoJSON.FeatureCollection | null;
+  /** Stage 6 — called when a risk polygon is clicked. */
+  onFarmRiskClick?: (farmId: string) => void;
 }
 
 export default function MapView({
@@ -98,6 +105,8 @@ export default function MapView({
   weatherSnapshot,
   sensorTrust,
   onSensorClick,
+  riskGeojson,
+  onFarmRiskClick,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<Map | null>(null);
@@ -380,7 +389,8 @@ export default function MapView({
     toggle(["rainfall-circles"], layers.rainfall_overlay);
     toggle(["flood-fill", "flood-line"], layers.flood_overlay);
     toggle(["sensor-trust-fill", "sensor-trust-flagged-halo"], hasTrust && layers.sensor_trust);
-  }, [layers, mapReady, sensorTrust]);
+    toggle(["farm-risk-fill", "farm-risk-line"], layers.risk_overlay && !!riskGeojson);
+  }, [layers, mapReady, sensorTrust, riskGeojson]);
 
   // ── Weather overlay update ─────────────────────────────────────────────────
 
@@ -500,6 +510,71 @@ export default function MapView({
     }
   }, [sensorTrust, mapReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Farm risk overlay (Stage 6) ────────────────────────────────────────────
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+
+    if (!map.getSource("farm-risk")) {
+      map.addSource("farm-risk", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
+      map.addLayer({
+        id: "farm-risk-fill",
+        type: "fill",
+        source: "farm-risk",
+        paint: {
+          "fill-color": ["coalesce", ["get", "colour"], "#64748b"],
+          "fill-opacity": 0.45,
+        },
+      });
+      map.addLayer({
+        id: "farm-risk-line",
+        type: "line",
+        source: "farm-risk",
+        paint: {
+          "line-color": ["coalesce", ["get", "colour"], "#64748b"],
+          "line-width": 2,
+        },
+      });
+
+      const riskPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 });
+      map.on("mouseenter", "farm-risk-fill", (e) => {
+        const f = e.features?.[0];
+        if (!f) return;
+        map.getCanvas().style.cursor = "pointer";
+        const p = f.properties as any;
+        riskPopup
+          .setLngLat((e as any).lngLat)
+          .setHTML(
+            `<div class="text-xs font-semibold text-white font-mono">${p.farm_id}</div>` +
+            `<div class="text-xs text-gray-300">Risk: <span class="capitalize font-bold" style="color:${p.colour}">${p.risk_category}</span></div>` +
+            (p.estimated_rainfall_mm != null ? `<div class="text-xs text-gray-300">Est. Rain: ${Number(p.estimated_rainfall_mm).toFixed(1)} ± ${Number(p.uncertainty_mm ?? 0).toFixed(1)} mm/hr</div>` : "") +
+            `<div class="text-xs text-gray-500 italic">Simulated GP estimate</div>`
+          )
+          .addTo(map);
+      });
+      map.on("mouseleave", "farm-risk-fill", () => {
+        map.getCanvas().style.cursor = "";
+        riskPopup.remove();
+      });
+
+      map.on("click", "farm-risk-fill", (e) => {
+        const f = e.features?.[0];
+        const farmId = f?.properties?.farm_id as string | undefined;
+        if (farmId && onFarmRiskClick) onFarmRiskClick(farmId);
+      });
+    }
+
+    const src = map.getSource("farm-risk") as GeoJSONSource | undefined;
+    if (src) {
+      const data: GeoJSON.FeatureCollection = riskGeojson ?? { type: "FeatureCollection", features: [] };
+      src.setData(data as any);
+    }
+  }, [riskGeojson, mapReady]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Farm detail helpers ───────────────────────────────────────────────────
 
   const openFarmDetail = useCallback((farmId: number) => {
@@ -609,6 +684,7 @@ const LAYER_LABELS: { key: keyof LayerVisibility; label: string; colour: string 
   { key: "rainfall_overlay", label: "Rainfall intensity (sim)", colour: "bg-indigo-400" },
   { key: "flood_overlay",    label: "Flood area (sim)",        colour: "bg-red-500" },
   { key: "sensor_trust",     label: "Sensor trust (Stage 5)",  colour: "bg-emerald-400" },
+  { key: "risk_overlay",     label: "Farm risk (Stage 6)",     colour: "bg-amber-400" },
 ];
 
 function LayerControls({ layers, onToggle }: LayerControlsProps) {
@@ -746,10 +822,24 @@ function FarmDetailPanel({ farm, loading, onClose }: FarmDetailPanelProps) {
             )}
           </div>
 
-          {/* Upcoming-stage placeholders */}
+          {/* Risk assessment (Stage 6) */}
           <div className="border-t border-navy-600 pt-2 space-y-1.5">
-            <Placeholder label="Estimated rainfall" note="Risk assessment — Stage 6" />
-            <Placeholder label="Risk category" note="Risk assessment — Stage 6" />
+            {farm.estimated_rainfall_mm !== null && farm.estimated_rainfall_mm !== undefined ? (
+              <Row
+                label="Estimated rainfall"
+                value={<span className="font-mono text-white text-xs">{farm.estimated_rainfall_mm.toFixed(1)} mm/hr</span>}
+              />
+            ) : (
+              <Placeholder label="Estimated rainfall" note="Risk assessment — Stage 6" />
+            )}
+            {farm.risk_category ? (
+              <Row
+                label="Risk category"
+                value={<span className="capitalize font-semibold text-xs text-brand-blue">{farm.risk_category}</span>}
+              />
+            ) : (
+              <Placeholder label="Risk category" note="Risk assessment — Stage 6" />
+            )}
             <Placeholder label="Claim status" note="Claims — Stage 8" />
           </div>
 

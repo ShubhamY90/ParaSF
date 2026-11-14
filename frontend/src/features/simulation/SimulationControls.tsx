@@ -5,7 +5,9 @@
 import { ScenarioInfo, SimulationRun, SimulationSnapshot, GaugeReading } from "../../api/simulation";
 import { UseSimulationReturn } from "../../hooks/useSimulation";
 import type { UseSensorTrustReturn } from "../../hooks/useSensorTrust";
+import type { UseRiskReturn } from "../../hooks/useRisk";
 import SensorTrustPanel from "../sensors/SensorTrustPanel";
+import FarmRiskPanel from "../risk/FarmRiskPanel";
 
 interface Props {
   sim: UseSimulationReturn;
@@ -16,9 +18,20 @@ interface Props {
    *  control section is rendered at the bottom of the sidebar. */
   sensorTrust?: UseSensorTrustReturn;
   onSensorSelect?: (sensorId: string) => void;
+  /** Stage 6 — farm-level risk assessment state. */
+  risk?: UseRiskReturn;
+  selectedFarmId?: string | null;
 }
 
-export default function SimulationControls({ sim, collapsed, onToggleCollapse, sensorTrust, onSensorSelect }: Props) {
+export default function SimulationControls({
+  sim,
+  collapsed,
+  onToggleCollapse,
+  sensorTrust,
+  onSensorSelect,
+  risk,
+  selectedFarmId,
+}: Props) {
   const { scenarios, selectedPreset, setSelectedPreset, run, snapshot, status, error, startNew, control } = sim;
 
   const pct = run ? Math.round((run.current_tick / Math.max(run.total_ticks - 1, 1)) * 100) : 0;
@@ -179,6 +192,16 @@ export default function SimulationControls({ sim, collapsed, onToggleCollapse, s
             tick={run?.current_tick ?? 0}
             sensorTrust={sensorTrust}
             onSensorSelect={onSensorSelect}
+          />
+        )}
+
+        {/* Stage 6 — Farm Risk Assessment */}
+        {risk && (
+          <FarmRiskPanel
+            runId={run?.id ?? null}
+            tick={run?.current_tick ?? 0}
+            risk={risk}
+            selectedFarmId={selectedFarmId ?? null}
           />
         )}
       </div>
