@@ -99,17 +99,17 @@ insurer = db.query(User).filter(User.email == "insurer@paratrust.dev").first()
 # ── Farmer 1: Rajan Kumar ────────────────────────────────────────────────────
 
 f1 = get_or_create_user("rajan@paratrust.dev", "farmer123", "Rajan Kumar", UserRole.farmer)
-p1 = get_or_create_profile(f1.id, phone="9876543210", address="Village Rampur", district="Varanasi", state="Uttar Pradesh")
+p1 = get_or_create_profile(f1.id, phone="9876543210", address="Village Katol, Nagpur", district="Nagpur", state="Maharashtra")
 
-farm1a = add_farm(p1.id, name="North Field", area_hectares=3.5, latitude=25.317, longitude=82.973)
-add_crop(farm1a.id, crop_type="wheat", season="rabi", area_hectares=2.0)
+farm1a = add_farm(p1.id, name="North Field", area_hectares=3.5, latitude=21.145, longitude=79.088)
+add_crop(farm1a.id, crop_type="cotton", season="kharif", area_hectares=2.0)
 add_policy(farm1a, p1.id, insurer.id, "F1A")
 
-farm1b = add_farm(p1.id, name="South Field", area_hectares=2.0, latitude=25.312, longitude=82.971)
-add_crop(farm1b.id, crop_type="rice", season="kharif", area_hectares=2.0)
+farm1b = add_farm(p1.id, name="South Field", area_hectares=2.0, latitude=21.150, longitude=79.092)
+add_crop(farm1b.id, crop_type="soybean", season="kharif", area_hectares=2.0)
 add_policy(farm1b, p1.id, insurer.id, "F1B")
 
-add_bank(p1.id, "Rajan Kumar", "7890", "State Bank of India", "SBIN0001234")
+add_bank(p1.id, "Rajan Kumar", "7890", "Bank of Maharashtra", "MAHB0000123")
 
 # ── Farmer 2: Meena Devi ─────────────────────────────────────────────────────
 

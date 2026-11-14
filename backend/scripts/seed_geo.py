@@ -1,4 +1,4 @@
-"""Stage 3 seed: demo farms clustered inside the Kashi-Ganga demo district.
+"""Stage 3 seed: demo farms clustered inside the Vidarbha demo district.
 
 Run AFTER ``seed_users.py`` (it creates the insurer account used to issue
 policies). Idempotent — safe to re-run. Adds ~13 demo farms across 5 demo
@@ -96,11 +96,11 @@ if not insurer:
 
 # ── Demo farmers within the district ─────────────────────────────────────────
 demo_farmers = [
-    ("arjun.geo@paratrust.dev",  "farmer123", "Arjun Singh",    "Varanasi", "Uttar Pradesh"),
-    ("lakshmi.geo@paratrust.dev","farmer123", "Lakshmi Rao",    "Varanasi", "Uttar Pradesh"),
-    ("vikram.geo@paratrust.dev", "farmer123", "Vikram Yadav",   "Varanasi", "Uttar Pradesh"),
-    ("priya.geo@paratrust.dev",  "farmer123", "Priya Sharma",   "Varanasi", "Uttar Pradesh"),
-    ("mohit.geo@paratrust.dev",  "farmer123", "Mohit Verma",    "Varanasi", "Uttar Pradesh"),
+    ("arjun.geo@paratrust.dev",  "farmer123", "Arjun Singh",    "Nagpur", "Maharashtra"),
+    ("lakshmi.geo@paratrust.dev","farmer123", "Lakshmi Rao",    "Wardha", "Maharashtra"),
+    ("vikram.geo@paratrust.dev", "farmer123", "Vikram Yadav",   "Nagpur", "Maharashtra"),
+    ("priya.geo@paratrust.dev",  "farmer123", "Priya Sharma",   "Amravati", "Maharashtra"),
+    ("mohit.geo@paratrust.dev",  "farmer123", "Mohit Verma",    "Chandrapur", "Maharashtra"),
 ]
 
 crop_options = [
@@ -134,4 +134,4 @@ for email, pw, name, district, state in demo_farmers:
 db.commit()
 db.close()
 print(f"Stage-3 geo seed complete: {farm_counter} demo farms added across "
-      f"{len(demo_farmers)} farmers inside the Kashi-Ganga demo district.")
+      f"{len(demo_farmers)} farmers inside the Vidarbha demo district.")

@@ -48,9 +48,9 @@ const SATELLITE_STYLE: maplibregl.StyleSpecification = {
   ],
 };
 
-// Demo district centre (Varanasi / Ganga basin). Used as the initial view when
+// Demo district centre (Vidarbha / Nagpur basin). Used as the initial view when
 // no farm centroid is available.
-const DISTRICT_CENTRE: [number, number] = [82.965, 25.335]; // [lng, lat]
+const DISTRICT_CENTRE: [number, number] = [79.088, 21.145]; // [lng, lat]
 const DISTRICT_ZOOM = 11;
 
 export interface LayerVisibility {

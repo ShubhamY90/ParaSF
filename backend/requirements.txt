@@ -13,5 +13,10 @@ numpy>=1.26
 pandas>=2.1
 scikit-learn>=1.4
 lightgbm>=4.3
+# Stage 4 — ERA5 real rainfall data
+cdsapi>=0.7
+xarray>=2024.1
+scipy>=1.12
+netCDF4>=1.6
 # geopandas, shapely                      -> Stage 6 (spatial estimation)
 # langgraph                               -> Stage 7

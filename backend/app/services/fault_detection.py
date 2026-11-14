@@ -122,10 +122,12 @@ def _generate_series(
             v = 0.0 if t >= n_ticks // 3 else max(0.0, base + rng.gauss(0, noise_std))
             n_mean = max(0.0, base + rng.gauss(0, noise_std * 0.8))
         elif condition == "genuine_localised_cell":
-            # One sensor sees a real intense local cell; neighbours stay low.
+            # One sensor sees a real intense local cell.
+            # KEY: neighbours show PARTIAL signal (not dry like spike),
+            # satellite_wet_flag=1, storm_proximity=1.
             if local_start <= t <= local_end:
                 v = rng.uniform(80, 180)
-                n_mean = rng.uniform(1, 8)   # neighbours stay low — key discriminator
+                n_mean = rng.uniform(15, 55)   # partial neighbour signal — key discriminator vs spike
             else:
                 v = max(0.0, base + rng.gauss(0, noise_std))
                 n_mean = max(0.0, base + rng.gauss(0, noise_std * 0.8))
@@ -152,6 +154,19 @@ def _generate_series(
         ratio_to_neighbour = values[t] / (neighbour_means[t] + 1e-6)
         diff_to_neighbour  = values[t] - neighbour_means[t]
 
+        # satellite_wet_flag + storm_proximity: key features that separate
+        # genuine_localised_cell (real storm → satellite wet, storm nearby)
+        # from spike (sensor fault → satellite dry, no storm track nearby).
+        if condition == "genuine_localised_cell" and local_start <= t <= local_end:
+            satellite_wet  = 1
+            storm_proximity = 1
+        elif condition == "spike" and t == n_ticks // 2:
+            satellite_wet  = 0
+            storm_proximity = 0
+        else:
+            satellite_wet  = 0
+            storm_proximity = 0
+
         rows.append({
             "value":               values[t],
             "z_score":             (values[t] - w_mean) / w_std,
@@ -166,6 +181,8 @@ def _generate_series(
             "stuck_flag":          stuck_flag,
             "is_zero":             int(values[t] < 0.01),
             "tick_ratio":          t / max(n_ticks - 1, 1),
+            "satellite_wet_flag":  satellite_wet,
+            "storm_proximity":     storm_proximity,
             "label":               condition,
         })
     return rows
@@ -198,6 +215,7 @@ FEATURE_COLS = [
     "rolling_mean", "rolling_std", "ratio_to_neighbour",
     "diff_to_neighbour", "neighbour_mean", "stuck_flag",
     "is_zero", "tick_ratio",
+    "satellite_wet_flag", "storm_proximity",   # key: spike vs genuine_localised_cell
 ]
 
 
@@ -250,6 +268,8 @@ def _build_live_features(
     reading: GaugeReading,
     history: list[float],       # own recent values, oldest-first (up to 5)
     neighbour_vals: list[float], # concurrent readings from nearby sensors
+    satellite_wet: int = 0,     # 1 if satellite shows wet pixel at this location/tick
+    storm_nearby: int = 0,      # 1 if storm track passes near this sensor at this tick
 ) -> np.ndarray:
     window = history[-5:] if len(history) >= 5 else history
     w_arr  = np.array(window, dtype=float) if window else np.array([reading.value])
@@ -275,6 +295,8 @@ def _build_live_features(
         stuck,
         int(reading.value < 0.01),
         0.5,  # tick_ratio unknown for live; use mid-scenario default
+        satellite_wet,
+        storm_nearby,
     ]], dtype=float)
 
 
@@ -326,11 +348,15 @@ def _investigation_note(predicted_class: str, confidence: float, value: float) -
 def classify_readings(
     readings: list[GaugeReading],
     history_map: dict[str, list[float]] | None = None,
+    satellite_wet_ids: set[str] | None = None,  # sensor_ids where satellite shows wet
+    storm_cell_ids: set[str] | None = None,     # sensor_ids where storm track is nearby
 ) -> list[SensorClassification]:
     """Classify a list of GaugeReading objects from one simulation tick.
 
     ``history_map`` maps sensor_id → list of recent own values (up to 5 ticks).
-    If not provided, single-tick features are used (less accurate for stuck/drift).
+    ``satellite_wet_ids`` and ``storm_cell_ids`` are optional sets of sensor IDs
+    where the satellite / storm-track evidence supports a genuine reading.
+    These are the key features that separate genuine_localised_cell from spike.
 
     Only rainfall gauges are classified for faults; water-level gauges receive
     a fixed 'normal' classification (fault model is trained on rainfall series).
@@ -338,18 +364,19 @@ def classify_readings(
     tm = get_trained_model()
     results: list[SensorClassification] = []
 
-    # Build neighbour map: for each rainfall gauge, find the 3 closest by index.
+    satellite_wet_ids = satellite_wet_ids or set()
+    storm_cell_ids    = storm_cell_ids    or set()
+
+    # Build neighbour map: for each rainfall gauge, find the 3 closest by value.
     rain_readings = [r for r in readings if r.sensor_type == "rainfall"]
     rain_vals     = {r.sensor_id: r.value for r in rain_readings}
 
     def _neighbours(sensor_id: str) -> list[float]:
         others = [v for sid, v in rain_vals.items() if sid != sensor_id]
-        # Simple: take up to 3 closest-valued (index-adjacent) neighbours.
         return sorted(others, key=lambda v: abs(v - rain_vals.get(sensor_id, 0)))[:3]
 
     for r in readings:
         if r.sensor_type == "water_level":
-            # Water-level gauges: trust based on simulated flood state only.
             results.append(SensorClassification(
                 sensor_id=r.sensor_id,
                 sensor_type=r.sensor_type,
@@ -362,9 +389,11 @@ def classify_readings(
             ))
             continue
 
-        hist = (history_map or {}).get(r.sensor_id, [r.value])
-        neighbours = _neighbours(r.sensor_id)
-        X = _build_live_features(r, hist, neighbours)
+        hist        = (history_map or {}).get(r.sensor_id, [r.value])
+        neighbours  = _neighbours(r.sensor_id)
+        sat_wet     = int(r.sensor_id in satellite_wet_ids)
+        storm_near  = int(r.sensor_id in storm_cell_ids)
+        X = _build_live_features(r, hist, neighbours, sat_wet, storm_near)
 
         proba = tm.model.predict_proba(X)[0]
         class_idx = int(np.argmax(proba))

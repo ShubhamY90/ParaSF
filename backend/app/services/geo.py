@@ -27,26 +27,26 @@ from typing import Any
 from app.core.config import settings
 
 # ─── Demo district definition ────────────────────────────────────────────────
-# Centred on the Varanasi / Ganga basin area. Coordinates are (lat, lng).
-DEMO_DISTRICT_NAME = "Kashi-Ganga Demo District"
-DEMO_DISTRICT_CENTRE = (25.335, 82.965)
+# Centred on the Vidarbha (Nagpur / Wardha basin) area. Coordinates are (lat, lng).
+DEMO_DISTRICT_NAME = "Vidarbha Demo District (Nagpur-Wardha Basin)"
+DEMO_DISTRICT_CENTRE = (21.145, 79.088)
 
 # Bounding box used for fast "is this farm inside the demo district?" filtering.
 # Stored as (min_lng, min_lat, max_lng, max_lat).
-DEMO_DISTRICT_BBOX: tuple[float, float, float, float] = (82.835, 25.205, 83.095, 25.465)
+DEMO_DISTRICT_BBOX: tuple[float, float, float, float] = (78.950, 21.020, 79.230, 21.270)
 
 # An irregular (but simple) polygon enclosing the demo district. [lng, lat] pairs,
 # closed (first == last). Clearly a *simulated* boundary — not an administrative
 # cadastre.
 DEMO_DISTRICT_POLYGON: list[list[float]] = [
-    [82.845, 25.225],
-    [82.960, 25.210],
-    [83.085, 25.230],
-    [83.100, 25.345],
-    [83.005, 25.460],
-    [82.870, 25.455],
-    [82.835, 25.340],
-    [82.845, 25.225],  # close the ring
+    [78.960, 21.040],
+    [79.080, 21.025],
+    [79.215, 21.050],
+    [79.230, 21.160],
+    [79.135, 21.265],
+    [78.985, 21.260],
+    [78.950, 21.150],
+    [78.960, 21.040],  # close the ring
 ]
 
 # ─── Conversions ─────────────────────────────────────────────────────────────
@@ -143,25 +143,25 @@ class WaterFeature:
     simulated: bool = True
 
 
-# The Ganga flows roughly south-easterly through the Varanasi area.
+# The Kanhan river flows south-easterly through the Vidarbha / Nagpur basin.
 _RIVER_PATH: list[list[float]] = [
-    [82.850, 25.405],
-    [82.900, 25.380],
-    [82.940, 25.355],
-    [82.972, 25.335],
-    [83.000, 25.315],
-    [83.030, 25.290],
-    [83.058, 25.265],
-    [83.085, 25.240],
+    [78.970, 21.230],
+    [79.020, 21.200],
+    [79.060, 21.170],
+    [79.095, 21.145],
+    [79.130, 21.120],
+    [79.165, 21.090],
+    [79.195, 21.065],
+    [79.220, 21.040],
 ]
 
 
 def _water_bodies() -> list[tuple[float, float, float]]:
-    """Fixed demo water bodies (pond/lake centres + radius in degrees)."""
+    """Vidarbha reservoirs / lakes (Gorewada, Ambazari, Futala)."""
     return [
-        (25.380, 82.905, 0.012),
-        (25.290, 83.020, 0.009),
-        (25.245, 82.890, 0.007),
+        (21.190, 79.040, 0.012),  # Gorewada Reservoir
+        (21.125, 79.045, 0.010),  # Ambazari Lake
+        (21.150, 79.050, 0.007),  # Futala Lake
     ]
 
 
@@ -204,8 +204,8 @@ def generate_water_features() -> list[WaterFeature]:
     features: list[WaterFeature] = []
 
     features.append(WaterFeature(
-        id="RIVER-GANGA-01",
-        name="Ganga (simulated reach)",
+        id="RIVER-KANHAN-01",
+        name="Kanhan River (Vidarbha basin)",
         kind="river",
         geometry={"type": "LineString", "coordinates": _RIVER_PATH},
     ))

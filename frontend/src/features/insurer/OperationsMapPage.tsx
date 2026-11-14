@@ -83,7 +83,7 @@ export default function OperationsMapPage() {
         </div>
         <div className="flex items-center gap-3">
           <p className="text-xs text-gray-500 hidden sm:block">
-            Kashi-Ganga Demo District · Basemap: ESRI World Imagery
+            Vidarbha Demo District · Basemap: ESRI World Imagery
           </p>
           <button
             onClick={() => setSidebarOpen(o => !o)}

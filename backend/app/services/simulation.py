@@ -211,9 +211,26 @@ class WeatherSimulator:
     # ── Gauge reading at tick t ───────────────────────────────────────────────
 
     def _gaussian_mm(self, sensor: Sensor, cell: StormCell | None, tick: int) -> float:
-        """Background + storm contribution for a rainfall gauge."""
+        """Background + storm contribution for a rainfall gauge.
+
+        When ERA5 data is available the background is replaced by the real
+        area-mean signal for that tick, scaled by a small per-sensor jitter so
+        individual gauges differ slightly (spatially realistic). The storm-cell
+        Gaussian is then added on top, ensuring the simulation scenarios still
+        produce distinct patterns even when grounded in real data.
+        """
+        from app.services.era5_loader import get_base_signal, era5_available  # local to avoid circular
+
         rng = random.Random(hash((sensor.id, tick, self.preset)) & 0xFFFFFFFF)
-        background = rng.uniform(0.1, 1.5)
+
+        if era5_available() and self.preset in (ScenarioPreset.SEVERE_FLOOD, ScenarioPreset.BROAD_RAIN, ScenarioPreset.FAULTY_SENSOR):
+            era5_base = get_base_signal(tick)
+            # Per-sensor spatial jitter: ±20 % drawn deterministically from sensor+tick hash
+            jitter = rng.uniform(0.80, 1.20)
+            background = max(0.0, era5_base * jitter)
+        else:
+            background = rng.uniform(0.1, 1.5)
+
         if cell is None:
             return background
         d_lat = sensor.latitude  - cell.lat
