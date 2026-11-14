@@ -3,6 +3,7 @@ import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../config/firebase";
 import { authApi, UserOut, UserRole, RegisterPayload } from "../api/auth";
+import { DEMO_ROLES } from "../config/constants";
 
 interface AuthContextValue {
   user: UserOut | null;
@@ -14,13 +15,6 @@ interface AuthContextValue {
 }
 
 export const AuthContext = createContext<AuthContextValue>({} as AuthContextValue);
-
-const DEMO_ROLES: Record<string, UserRole> = {
-  "farmer@paratrust.dev": "farmer",
-  "insurer@paratrust.dev": "insurer",
-  "auditor@paratrust.dev": "auditor",
-  "admin@paratrust.dev": "admin",
-};
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserOut | null>(null);

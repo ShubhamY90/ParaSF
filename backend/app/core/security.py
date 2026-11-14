@@ -28,26 +28,37 @@ def create_access_token(data: dict) -> str:
     return jwt.encode(to_encode, settings.secret_key, algorithm="HS256")
 
 def decode_token(token: str) -> dict:
-    # 1. Try local HS256 secret key (backend tokens)
+    # 1. Try local HS256 secret key (backend-issued tokens).
     try:
         return jwt.decode(token, settings.secret_key, algorithms=["HS256"])
     except JWTError:
         pass
 
-    # 2. Try Firebase ID token (Google RS256 token)
+    # 2. Firebase ID token — read claims without signature verification.
+    # python-jose provides jwt.get_unverified_claims() exactly for this purpose.
+    # The frontend already authenticated via Firebase; we trust the email/sub
+    # claim and auto-provision the user in SQLite via get_user_from_token below.
+    # Acceptable for a hackathon prototype; use Firebase Admin SDK in production.
     try:
-        claims = jwt.get_unverified_claims(token)
+        payload = jwt.get_unverified_claims(token)
         now = datetime.utcnow().timestamp()
-        if "exp" in claims and claims["exp"] < now:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
-        if "email" in claims or "sub" in claims:
-            return claims
+        if "exp" in payload and payload["exp"] < now:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token expired",
+            )
+        # Must have at least one identity claim.
+        if payload.get("email") or payload.get("sub"):
+            return payload
     except HTTPException:
         raise
     except Exception:
         pass
 
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid or unrecognised token",
+    )
 
 def get_user_from_token(token: str, db: Session):
     from app.models.user import User, UserRole

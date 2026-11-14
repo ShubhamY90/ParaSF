@@ -9,6 +9,7 @@ from app.models.risk import FarmRiskEstimate
 from app.core.deps import require_role
 from app.core.security import get_current_user
 from app.services import geo
+from app.services.geo import generate_farms as _generate_sim_farms
 from app.schemas.geo import FarmMapDetail, CropBrief, PolicyBrief
 
 router = APIRouter(prefix="/api/geo", tags=["geo"])
@@ -142,6 +143,25 @@ def _first_active_policy(db: Session, farm_id: int) -> InsurancePolicy | None:
 
 # ── Farm detail panel ─────────────────────────────────────────────────────────
 
+def _nearest_sim_farm_id(lat: float | None, lng: float | None) -> str | None:
+    """Return the ID of the simulated farm whose centroid is closest to (lat, lng).
+
+    Used to link a real DB farm to its nearest simulated risk estimate.
+    Returns None if the farm has no coordinates.
+    """
+    if lat is None or lng is None:
+        return None
+    sim_farms = _generate_sim_farms()
+    best_id: str | None = None
+    best_dist = float("inf")
+    for sf in sim_farms:
+        dist = (sf.latitude - lat) ** 2 + (sf.longitude - lng) ** 2
+        if dist < best_dist:
+            best_dist = dist
+            best_id = sf.id
+    return best_id
+
+
 @router.get("/farms/{farm_id}", response_model=FarmMapDetail)
 def get_farm_detail(
     farm_id: int,
@@ -186,12 +206,16 @@ def get_farm_detail(
         for c in (farm.crops or [])
     ]
 
-    risk_est = (
-        db.query(FarmRiskEstimate)
-        .filter(FarmRiskEstimate.farm_id.in_([str(farm.id), f"SIM-FARM-{farm.id:03d}"]))
-        .order_by(FarmRiskEstimate.tick.desc())
-        .first()
-    )
+    # Find the nearest simulated farm to this real DB farm, then look up risk data.
+    sim_farm_id = _nearest_sim_farm_id(farm.latitude, farm.longitude)
+    risk_est = None
+    if sim_farm_id:
+        risk_est = (
+            db.query(FarmRiskEstimate)
+            .filter(FarmRiskEstimate.farm_id == sim_farm_id)
+            .order_by(FarmRiskEstimate.tick.desc())
+            .first()
+        )
     estimated_rainfall_mm = risk_est.estimated_rainfall_mm if risk_est else None
     risk_category = risk_est.risk_category if risk_est else None
 

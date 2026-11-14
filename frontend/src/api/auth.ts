@@ -11,6 +11,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { auth, db } from "../config/firebase";
+import { DEMO_ROLES } from "../config/constants";
 
 export type UserRole = "farmer" | "insurer" | "auditor" | "admin";
 
@@ -43,12 +44,6 @@ export interface LoginPayload {
   password: string;
 }
 
-const DEMO_ROLES: Record<string, UserRole> = {
-  "farmer@paratrust.dev": "farmer",
-  "insurer@paratrust.dev": "insurer",
-  "auditor@paratrust.dev": "auditor",
-  "admin@paratrust.dev": "admin",
-};
 
 /**
  * Ensures a user document exists in Firestore.

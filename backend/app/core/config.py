@@ -1,4 +1,7 @@
+import logging
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -12,3 +15,9 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+if settings.secret_key == "change-me-in-dev-only":
+    logger.warning(
+        "⚠️  ParaTrust: SECRET_KEY is set to the default dev value. "
+        "Set SECRET_KEY in backend/.env before deploying."
+    )
